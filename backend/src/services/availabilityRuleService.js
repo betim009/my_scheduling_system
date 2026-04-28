@@ -6,7 +6,7 @@ const {
   toApiWeekday,
   toDatabaseWeekday,
 } = require('../utils/schedule');
-const { ensureAdminUserTarget, normalizeUserId } = require('./scheduleSupportService');
+const { resolveAdminUserId } = require('./scheduleSupportService');
 
 function normalizeBooleanValue(value, fallback = true) {
   if (value === undefined) {
@@ -42,8 +42,12 @@ function formatRule(rule) {
   };
 }
 
-async function normalizeRulePayload(payload, existingRule = null) {
-  const userId = normalizeUserId(payload.user_id ?? existingRule?.user_id);
+async function normalizeRulePayload(payload, currentUser, existingRule = null) {
+  const userId = await resolveAdminUserId({
+    requestedUserId: payload.user_id ?? existingRule?.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
   const weekdayValue = Number(payload.weekday ?? toApiWeekday(Number(existingRule?.weekday)));
   const startTime = normalizeTime(payload.start_time ?? existingRule?.start_time);
   const endTime = normalizeTime(payload.end_time ?? existingRule?.end_time);
@@ -75,8 +79,6 @@ async function normalizeRulePayload(payload, existingRule = null) {
     throw new AppError('O campo end_time deve ser maior que start_time.', 400);
   }
 
-  await ensureAdminUserTarget(userId);
-
   return {
     userId,
     weekday: toDatabaseWeekday(weekdayValue),
@@ -87,27 +89,29 @@ async function normalizeRulePayload(payload, existingRule = null) {
   };
 }
 
-async function createRule(payload) {
-  const data = await normalizeRulePayload(payload);
+async function createRule(payload, currentUser) {
+  const data = await normalizeRulePayload(payload, currentUser);
   const ruleId = await availabilityRuleModel.createRule(data);
   const rule = await availabilityRuleModel.findById(ruleId);
 
   return formatRule(rule);
 }
 
-async function listRules(query) {
-  const filters = {};
-
-  if (query.user_id !== undefined) {
-    filters.userId = normalizeUserId(query.user_id);
-  }
+async function listRules(query, currentUser) {
+  const filters = {
+    userId: await resolveAdminUserId({
+      requestedUserId: query.user_id,
+      currentUser,
+      requireCurrentAdmin: true,
+    }),
+  };
 
   const rules = await availabilityRuleModel.findAll(filters);
 
   return rules.map(formatRule);
 }
 
-async function getRuleById(id) {
+async function getRuleById(id, currentUser) {
   const ruleId = Number(id);
 
   if (!Number.isInteger(ruleId) || ruleId <= 0) {
@@ -120,10 +124,16 @@ async function getRuleById(id) {
     throw new AppError('Regra de disponibilidade não encontrada.', 404);
   }
 
+  await resolveAdminUserId({
+    requestedUserId: rule.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
+
   return formatRule(rule);
 }
 
-async function updateRule(id, payload) {
+async function updateRule(id, payload, currentUser) {
   const ruleId = Number(id);
 
   if (!Number.isInteger(ruleId) || ruleId <= 0) {
@@ -136,7 +146,7 @@ async function updateRule(id, payload) {
     throw new AppError('Regra de disponibilidade não encontrada.', 404);
   }
 
-  const data = await normalizeRulePayload(payload, existingRule);
+  const data = await normalizeRulePayload(payload, currentUser, existingRule);
   await availabilityRuleModel.updateById(ruleId, data);
 
   const updatedRule = await availabilityRuleModel.findById(ruleId);
@@ -144,7 +154,7 @@ async function updateRule(id, payload) {
   return formatRule(updatedRule);
 }
 
-async function deleteRule(id) {
+async function deleteRule(id, currentUser) {
   const ruleId = Number(id);
 
   if (!Number.isInteger(ruleId) || ruleId <= 0) {
@@ -156,6 +166,12 @@ async function deleteRule(id) {
   if (!existingRule) {
     throw new AppError('Regra de disponibilidade não encontrada.', 404);
   }
+
+  await resolveAdminUserId({
+    requestedUserId: existingRule.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
 
   await availabilityRuleModel.deleteById(ruleId);
 }

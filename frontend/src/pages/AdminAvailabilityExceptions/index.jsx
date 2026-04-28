@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, TextField } from '@mui/material'
+import { Alert, Button, Stack } from '@mui/material'
 import { EventBusyRounded } from '@mui/icons-material'
 import { useCallback, useEffect, useState } from 'react'
 import ExceptionFormDialog from '../../components/adminAvailabilityExceptions/ExceptionFormDialog'
@@ -15,7 +15,6 @@ import {
 } from '../../services/availabilityExceptionsService'
 
 const initialFormData = {
-  user_id: '',
   exception_date: '',
   type: 'block_full_day',
   start_time: '',
@@ -31,7 +30,6 @@ function AdminAvailabilityExceptionsPage() {
   const [exceptions, setExceptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
-  const [filterUserId, setFilterUserId] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState('create')
   const [formData, setFormData] = useState(initialFormData)
@@ -44,21 +42,19 @@ function AdminAvailabilityExceptionsPage() {
     message: '',
   })
 
-  const loadExceptions = useCallback(async (userId = filterUserId) => {
+  const loadExceptions = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
 
     try {
-      const data = await fetchAvailabilityExceptions(
-        userId ? { user_id: Number(userId) } : {}
-      )
+      const data = await fetchAvailabilityExceptions()
       setExceptions(data)
     } catch (error) {
       setErrorMessage(getApiMessage(error, 'Não foi possível carregar as exceções da agenda.'))
     } finally {
       setLoading(false)
     }
-  }, [filterUserId])
+  }, [])
 
   useEffect(() => {
     loadExceptions()
@@ -83,7 +79,6 @@ function AdminAvailabilityExceptionsPage() {
     setDialogMode('edit')
     setEditingExceptionId(exception.id)
     setFormData({
-      user_id: exception.user_id,
       exception_date: exception.exception_date,
       type: exception.type,
       start_time: exception.start_time,
@@ -159,17 +154,9 @@ function AdminAvailabilityExceptionsPage() {
         onAction={handleOpenCreate}
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          label="Filtrar por user_id"
-          type="number"
-          value={filterUserId}
-          onChange={(event) => setFilterUserId(event.target.value)}
-        />
-        <Button variant="outlined" onClick={() => loadExceptions()}>
-          Atualizar
-        </Button>
-      </Stack>
+      <Button variant="outlined" onClick={() => loadExceptions()} sx={{ alignSelf: 'flex-start' }}>
+        Atualizar
+      </Button>
 
       {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
 

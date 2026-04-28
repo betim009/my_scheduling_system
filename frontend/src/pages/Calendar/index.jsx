@@ -74,7 +74,7 @@ function CalendarPage() {
   })
 
   const currentMonthKey = getMonthKey(currentMonthDate)
-  const canLoadCalendar = isAuthenticated ? Boolean(teacherId) : true
+  const canLoadCalendar = true
   const selectedDateKey = selectedDate ? formatDateKey(selectedDate) : ''
   const monthSlots = useMemo(() => monthCache[currentMonthKey] || [], [monthCache, currentMonthKey])
   const slotsByDate = useMemo(() => groupSlotsByDate(monthSlots), [monthSlots])
@@ -368,7 +368,9 @@ function CalendarPage() {
   }
 
   async function handleConfirmRequest() {
-    if (!selectedSlot || !teacherId) {
+    const requestTeacherId = selectedSlot?.user_id || teacherId
+
+    if (!selectedSlot || !requestTeacherId) {
       return
     }
 
@@ -377,7 +379,7 @@ function CalendarPage() {
 
     try {
       const { bookingRequest } = await createBookingRequest({
-        teacher_id: teacherId,
+        teacher_id: requestTeacherId,
         requested_date: selectedSlot.slot_date,
         start_time: selectedSlot.start_time,
         end_time: selectedSlot.end_time,
@@ -410,13 +412,6 @@ function CalendarPage() {
       {!isAuthenticated ? (
         <Alert severity="info">
           Você pode visualizar a agenda sem login. Para solicitar um horário, entre na sua conta ou crie um cadastro.
-        </Alert>
-      ) : null}
-
-      {isAuthenticated && !teacherId ? (
-        <Alert severity="warning">
-          Defina <code>VITE_CALENDAR_USER_ID</code> no frontend para informar qual
-          professor/admin deve ser consultado pela tela de calendário.
         </Alert>
       ) : null}
 
@@ -462,7 +457,7 @@ function CalendarPage() {
           description="Gere a agenda no painel administrativo ou revise as regras e exceções cadastradas."
         />
       ) : null}
-      {!monthLoading && !monthError && teacherId && monthSlots.length > 0 && filteredMonthSlots.length === 0 ? (
+      {!monthLoading && !monthError && monthSlots.length > 0 && filteredMonthSlots.length === 0 ? (
         <EmptyState
           icon={<ViewWeekRounded />}
           title="Nenhum slot corresponde ao filtro no período."

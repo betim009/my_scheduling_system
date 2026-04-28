@@ -18,7 +18,6 @@ function RulesTable({ rules, loadingId, onEdit, onDelete }) {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>User ID</TableCell>
             <TableCell>Dia</TableCell>
             <TableCell>Início</TableCell>
             <TableCell>Fim</TableCell>
@@ -30,7 +29,6 @@ function RulesTable({ rules, loadingId, onEdit, onDelete }) {
         <TableBody>
           {rules.map((rule) => (
             <TableRow key={rule.id} hover>
-              <TableCell>{rule.user_id}</TableCell>
               <TableCell>{getWeekdayLabel(rule.weekday)}</TableCell>
               <TableCell>{normalizeTimeLabel(rule.start_time)}</TableCell>
               <TableCell>{normalizeTimeLabel(rule.end_time)}</TableCell>

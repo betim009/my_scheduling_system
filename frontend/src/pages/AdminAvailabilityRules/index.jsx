@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, TextField } from '@mui/material'
+import { Alert, Button, Stack } from '@mui/material'
 import { RuleRounded } from '@mui/icons-material'
 import { useCallback, useEffect, useState } from 'react'
 import AppSnackbar from '../../components/common/AppSnackbar'
@@ -15,7 +15,6 @@ import {
 } from '../../services/availabilityRulesService'
 
 const initialFormData = {
-  user_id: '',
   weekday: 1,
   start_time: '',
   end_time: '',
@@ -31,7 +30,6 @@ function AdminAvailabilityRulesPage() {
   const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
-  const [filterUserId, setFilterUserId] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState('create')
   const [formData, setFormData] = useState(initialFormData)
@@ -44,21 +42,19 @@ function AdminAvailabilityRulesPage() {
     message: '',
   })
 
-  const loadRules = useCallback(async (userId = filterUserId) => {
+  const loadRules = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
 
     try {
-      const data = await fetchAvailabilityRules(
-        userId ? { user_id: Number(userId) } : {}
-      )
+      const data = await fetchAvailabilityRules()
       setRules(data)
     } catch (error) {
       setErrorMessage(getApiMessage(error, 'Não foi possível carregar as regras da agenda.'))
     } finally {
       setLoading(false)
     }
-  }, [filterUserId])
+  }, [])
 
   useEffect(() => {
     loadRules()
@@ -83,7 +79,6 @@ function AdminAvailabilityRulesPage() {
     setDialogMode('edit')
     setEditingRuleId(rule.id)
     setFormData({
-      user_id: rule.user_id,
       weekday: rule.weekday,
       start_time: rule.start_time,
       end_time: rule.end_time,
@@ -150,17 +145,9 @@ function AdminAvailabilityRulesPage() {
         onAction={handleOpenCreate}
       />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
-          label="Filtrar por user_id"
-          type="number"
-          value={filterUserId}
-          onChange={(event) => setFilterUserId(event.target.value)}
-        />
-        <Button variant="outlined" onClick={() => loadRules()}>
-          Atualizar
-        </Button>
-      </Stack>
+      <Button variant="outlined" onClick={() => loadRules()} sx={{ alignSelf: 'flex-start' }}>
+        Atualizar
+      </Button>
 
       {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
 

@@ -34,16 +34,6 @@ function GenerationForm({ formData, defaultSettings, loading, summary, onChange,
           </Typography>
         </Stack>
 
-        <TextField
-          label="User ID"
-          name="user_id"
-          type="number"
-          value={formData.user_id}
-          onChange={onChange}
-          required
-          fullWidth
-        />
-
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
             label="Data inicial"

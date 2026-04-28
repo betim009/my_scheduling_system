@@ -26,11 +26,14 @@ function normalizeCalendarSlot(slot) {
 }
 
 async function fetchCalendarMonth({ userId, month }) {
+  const params = { month }
+
+  if (userId) {
+    params.user_id = userId
+  }
+
   const response = await api.get('/calendar-slots', {
-    params: {
-      user_id: userId,
-      month,
-    },
+    params,
   })
 
   const data = response.data?.data || { user_id: userId, month, slots: [] }
@@ -42,11 +45,14 @@ async function fetchCalendarMonth({ userId, month }) {
 }
 
 async function fetchCalendarDay({ userId, date }) {
+  const params = { date }
+
+  if (userId) {
+    params.user_id = userId
+  }
+
   const response = await api.get('/calendar-slots/day', {
-    params: {
-      user_id: userId,
-      date,
-    },
+    params,
   })
 
   const data = response.data?.data || { user_id: userId, date, slots: [] }

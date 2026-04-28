@@ -3,7 +3,7 @@ const { sendSuccess } = require('../utils/response');
 
 async function generateSlots(request, response, next) {
   try {
-    const generationSummary = await calendarSlotService.generateSlots(request.body);
+    const generationSummary = await calendarSlotService.generateSlots(request.body, request.user);
 
     return sendSuccess(response, 200, 'Slots de calendário gerados com sucesso.', {
       generation_summary: generationSummary,

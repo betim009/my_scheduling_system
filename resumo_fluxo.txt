@@ -1,0 +1,15 @@
+1. Configura sistema
+2. Cria planos
+3. Define horários
+4. Gera agenda
+
+5. Aluno entra
+6. Aluno pede plano
+7. Admin aprova plano
+
+8. Aluno escolhe horário
+9. Aluno solicita aula
+10. Admin aprova
+
+11. Aula acontece
+12. Admin gerencia depois

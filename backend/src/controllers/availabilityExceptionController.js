@@ -3,7 +3,7 @@ const { sendSuccess } = require('../utils/response');
 
 async function createException(request, response, next) {
   try {
-    const exception = await availabilityExceptionService.createException(request.body);
+    const exception = await availabilityExceptionService.createException(request.body, request.user);
 
     return sendSuccess(response, 201, 'Exceção de disponibilidade criada com sucesso.', {
       exception,
@@ -15,7 +15,7 @@ async function createException(request, response, next) {
 
 async function listExceptions(request, response, next) {
   try {
-    const exceptions = await availabilityExceptionService.listExceptions(request.query);
+    const exceptions = await availabilityExceptionService.listExceptions(request.query, request.user);
 
     return sendSuccess(response, 200, 'Exceções de disponibilidade carregadas com sucesso.', {
       exceptions,
@@ -27,7 +27,7 @@ async function listExceptions(request, response, next) {
 
 async function getExceptionById(request, response, next) {
   try {
-    const exception = await availabilityExceptionService.getExceptionById(request.params.id);
+    const exception = await availabilityExceptionService.getExceptionById(request.params.id, request.user);
 
     return sendSuccess(response, 200, 'Exceção de disponibilidade carregada com sucesso.', {
       exception,
@@ -41,7 +41,8 @@ async function updateException(request, response, next) {
   try {
     const exception = await availabilityExceptionService.updateException(
       request.params.id,
-      request.body
+      request.body,
+      request.user
     );
 
     return sendSuccess(response, 200, 'Exceção de disponibilidade atualizada com sucesso.', {
@@ -54,7 +55,7 @@ async function updateException(request, response, next) {
 
 async function deleteException(request, response, next) {
   try {
-    await availabilityExceptionService.deleteException(request.params.id);
+    await availabilityExceptionService.deleteException(request.params.id, request.user);
 
     return sendSuccess(response, 200, 'Exceção de disponibilidade removida com sucesso.');
   } catch (error) {

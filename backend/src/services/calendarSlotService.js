@@ -1,7 +1,6 @@
 const availabilityExceptionModel = require('../models/availabilityExceptionModel');
 const availabilityRuleModel = require('../models/availabilityRuleModel');
 const calendarSlotModel = require('../models/calendarSlotModel');
-const userModel = require('../models/userModel');
 const { pool } = require('../database/connection');
 const AppError = require('../utils/AppError');
 const {
@@ -16,7 +15,7 @@ const {
   normalizeTime,
   timeToMinutes,
 } = require('../utils/schedule');
-const { ensureAdminUserTarget, normalizeUserId } = require('./scheduleSupportService');
+const { ensureAdminUserTarget, normalizeUserId, resolveAdminUserId } = require('./scheduleSupportService');
 const { getSystemSetting, getSystemSettings } = require('./systemSettingsRuntimeService');
 
 function formatSlot(slot) {
@@ -57,14 +56,7 @@ async function resolvePublicCalendarUserId(query) {
     return userId;
   }
 
-  const admins = await userModel.findAll({ role: 'admin' });
-  const firstAdmin = admins[0];
-
-  if (!firstAdmin) {
-    throw new AppError('Nenhum professor/admin foi encontrado para exibir a agenda pública.', 404);
-  }
-
-  return firstAdmin.id;
+  return resolveAdminUserId({ requestedUserId: undefined });
 }
 
 function addSlotToMap(slotMap, slot) {
@@ -287,8 +279,12 @@ function groupExceptionsByDate(exceptions) {
   }, new Map());
 }
 
-async function normalizeGenerationPayload(payload) {
-  const userId = normalizeUserId(payload.user_id);
+async function normalizeGenerationPayload(payload, currentUser) {
+  const userId = await resolveAdminUserId({
+    requestedUserId: payload.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
   const startDate = String(payload.start_date || '').trim();
   const endDate = String(payload.end_date || '').trim();
 
@@ -304,8 +300,6 @@ async function normalizeGenerationPayload(payload) {
     throw new AppError('start_date não pode ser maior que end_date.', 400);
   }
 
-  await ensureAdminUserTarget(userId);
-
   return {
     userId,
     startDate,
@@ -313,8 +307,8 @@ async function normalizeGenerationPayload(payload) {
   };
 }
 
-async function generateSlots(payload) {
-  const { userId, startDate, endDate } = await normalizeGenerationPayload(payload);
+async function generateSlots(payload, currentUser) {
+  const { userId, startDate, endDate } = await normalizeGenerationPayload(payload, currentUser);
   const fallbackSlotDurationMinutes = Number(
     await getSystemSetting('default_slot_duration_minutes', {
       fallback: DEFAULT_SLOT_DURATION_MINUTES,
@@ -419,15 +413,16 @@ async function generateSlots(payload) {
 async function listSlotsByMonth(query, currentUser) {
   ensureCalendarViewer(currentUser);
 
-  const userId = normalizeUserId(query.user_id);
+  const userId = await resolveAdminUserId({
+    requestedUserId: query.user_id,
+    currentUser,
+  });
   const month = String(query.month || '').trim();
   const monthDateRange = getMonthDateRange(month);
 
   if (!monthDateRange) {
     throw new AppError('O filtro month é obrigatório e deve estar no formato YYYY-MM.', 400);
   }
-
-  await ensureAdminUserTarget(userId);
 
   const statuses = currentUser.role === 'student' ? ['available'] : [];
   const slots = await calendarSlotModel.findByDateRange({
@@ -447,14 +442,15 @@ async function listSlotsByMonth(query, currentUser) {
 async function listSlotsByDay(query, currentUser) {
   ensureCalendarViewer(currentUser);
 
-  const userId = normalizeUserId(query.user_id);
+  const userId = await resolveAdminUserId({
+    requestedUserId: query.user_id,
+    currentUser,
+  });
   const date = String(query.date || '').trim();
 
   if (!isValidDateString(date)) {
     throw new AppError('O filtro date é obrigatório e deve estar no formato YYYY-MM-DD.', 400);
   }
-
-  await ensureAdminUserTarget(userId);
 
   const statuses = currentUser.role === 'student' ? ['available'] : [];
   const slots = await calendarSlotModel.findByDate({

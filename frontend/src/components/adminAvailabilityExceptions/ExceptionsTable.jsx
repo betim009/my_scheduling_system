@@ -17,7 +17,6 @@ function ExceptionsTable({ exceptions, loadingId, onEdit, onDelete }) {
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>User ID</TableCell>
             <TableCell>Data</TableCell>
             <TableCell>Tipo</TableCell>
             <TableCell>Início</TableCell>
@@ -29,7 +28,6 @@ function ExceptionsTable({ exceptions, loadingId, onEdit, onDelete }) {
         <TableBody>
           {exceptions.map((exception) => (
             <TableRow key={exception.id} hover>
-              <TableCell>{exception.user_id}</TableCell>
               <TableCell>{exception.exception_date}</TableCell>
               <TableCell>{getExceptionTypeLabel(exception.type)}</TableCell>
               <TableCell>{exception.start_time ? normalizeTimeLabel(exception.start_time) : '-'}</TableCell>

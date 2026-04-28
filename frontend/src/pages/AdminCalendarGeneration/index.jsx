@@ -12,7 +12,6 @@ function getApiMessage(error, fallbackMessage) {
 
 function AdminCalendarGenerationPage() {
   const [formData, setFormData] = useState({
-    user_id: '',
     start_date: '',
     end_date: '',
   })

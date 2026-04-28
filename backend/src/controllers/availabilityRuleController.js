@@ -3,7 +3,7 @@ const { sendSuccess } = require('../utils/response');
 
 async function createRule(request, response, next) {
   try {
-    const rule = await availabilityRuleService.createRule(request.body);
+    const rule = await availabilityRuleService.createRule(request.body, request.user);
 
     return sendSuccess(response, 201, 'Regra de disponibilidade criada com sucesso.', {
       rule,
@@ -15,7 +15,7 @@ async function createRule(request, response, next) {
 
 async function listRules(request, response, next) {
   try {
-    const rules = await availabilityRuleService.listRules(request.query);
+    const rules = await availabilityRuleService.listRules(request.query, request.user);
 
     return sendSuccess(response, 200, 'Regras de disponibilidade carregadas com sucesso.', {
       rules,
@@ -27,7 +27,7 @@ async function listRules(request, response, next) {
 
 async function getRuleById(request, response, next) {
   try {
-    const rule = await availabilityRuleService.getRuleById(request.params.id);
+    const rule = await availabilityRuleService.getRuleById(request.params.id, request.user);
 
     return sendSuccess(response, 200, 'Regra de disponibilidade carregada com sucesso.', {
       rule,
@@ -39,7 +39,7 @@ async function getRuleById(request, response, next) {
 
 async function updateRule(request, response, next) {
   try {
-    const rule = await availabilityRuleService.updateRule(request.params.id, request.body);
+    const rule = await availabilityRuleService.updateRule(request.params.id, request.body, request.user);
 
     return sendSuccess(response, 200, 'Regra de disponibilidade atualizada com sucesso.', {
       rule,
@@ -51,7 +51,7 @@ async function updateRule(request, response, next) {
 
 async function deleteRule(request, response, next) {
   try {
-    await availabilityRuleService.deleteRule(request.params.id);
+    await availabilityRuleService.deleteRule(request.params.id, request.user);
 
     return sendSuccess(response, 200, 'Regra de disponibilidade removida com sucesso.');
   } catch (error) {

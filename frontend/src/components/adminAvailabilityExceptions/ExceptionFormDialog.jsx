@@ -33,16 +33,6 @@ function ExceptionFormDialog({
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           <TextField
-            label="User ID"
-            name="user_id"
-            type="number"
-            value={formData.user_id}
-            onChange={onChange}
-            required
-            fullWidth
-          />
-
-          <TextField
             label="Data da exceção"
             name="exception_date"
             type="date"

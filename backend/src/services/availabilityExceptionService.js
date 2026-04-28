@@ -1,7 +1,7 @@
 const availabilityExceptionModel = require('../models/availabilityExceptionModel');
 const AppError = require('../utils/AppError');
 const { isTimeRangeValid, isValidDateString, normalizeTime } = require('../utils/schedule');
-const { ensureAdminUserTarget, normalizeUserId } = require('./scheduleSupportService');
+const { resolveAdminUserId } = require('./scheduleSupportService');
 
 const ALLOWED_EXCEPTION_TYPES = [
   'block_full_day',
@@ -24,8 +24,12 @@ function formatException(exception) {
   };
 }
 
-async function normalizeExceptionPayload(payload, existingException = null) {
-  const userId = normalizeUserId(payload.user_id ?? existingException?.user_id);
+async function normalizeExceptionPayload(payload, currentUser, existingException = null) {
+  const userId = await resolveAdminUserId({
+    requestedUserId: payload.user_id ?? existingException?.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
   const exceptionDate = String(
     payload.exception_date ?? existingException?.exception_date ?? ''
   ).trim();
@@ -48,8 +52,6 @@ async function normalizeExceptionPayload(payload, existingException = null) {
       400
     );
   }
-
-  await ensureAdminUserTarget(userId);
 
   let startTime = normalizeTime(payload.start_time ?? existingException?.start_time);
   let endTime = normalizeTime(payload.end_time ?? existingException?.end_time);
@@ -78,12 +80,14 @@ async function normalizeExceptionPayload(payload, existingException = null) {
   };
 }
 
-function normalizeExceptionFilters(query) {
-  const filters = {};
-
-  if (query.user_id !== undefined) {
-    filters.userId = normalizeUserId(query.user_id);
-  }
+async function normalizeExceptionFilters(query, currentUser) {
+  const filters = {
+    userId: await resolveAdminUserId({
+      requestedUserId: query.user_id,
+      currentUser,
+      requireCurrentAdmin: true,
+    }),
+  };
 
   const hasStartDate = query.start_date !== undefined;
   const hasEndDate = query.end_date !== undefined;
@@ -114,22 +118,22 @@ function normalizeExceptionFilters(query) {
   return filters;
 }
 
-async function createException(payload) {
-  const data = await normalizeExceptionPayload(payload);
+async function createException(payload, currentUser) {
+  const data = await normalizeExceptionPayload(payload, currentUser);
   const exceptionId = await availabilityExceptionModel.createException(data);
   const exception = await availabilityExceptionModel.findById(exceptionId);
 
   return formatException(exception);
 }
 
-async function listExceptions(query) {
-  const filters = normalizeExceptionFilters(query);
+async function listExceptions(query, currentUser) {
+  const filters = await normalizeExceptionFilters(query, currentUser);
   const exceptions = await availabilityExceptionModel.findAll(filters);
 
   return exceptions.map(formatException);
 }
 
-async function getExceptionById(id) {
+async function getExceptionById(id, currentUser) {
   const exceptionId = Number(id);
 
   if (!Number.isInteger(exceptionId) || exceptionId <= 0) {
@@ -142,10 +146,16 @@ async function getExceptionById(id) {
     throw new AppError('Exceção de disponibilidade não encontrada.', 404);
   }
 
+  await resolveAdminUserId({
+    requestedUserId: exception.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
+
   return formatException(exception);
 }
 
-async function updateException(id, payload) {
+async function updateException(id, payload, currentUser) {
   const exceptionId = Number(id);
 
   if (!Number.isInteger(exceptionId) || exceptionId <= 0) {
@@ -158,7 +168,7 @@ async function updateException(id, payload) {
     throw new AppError('Exceção de disponibilidade não encontrada.', 404);
   }
 
-  const data = await normalizeExceptionPayload(payload, existingException);
+  const data = await normalizeExceptionPayload(payload, currentUser, existingException);
   await availabilityExceptionModel.updateById(exceptionId, data);
 
   const updatedException = await availabilityExceptionModel.findById(exceptionId);
@@ -166,7 +176,7 @@ async function updateException(id, payload) {
   return formatException(updatedException);
 }
 
-async function deleteException(id) {
+async function deleteException(id, currentUser) {
   const exceptionId = Number(id);
 
   if (!Number.isInteger(exceptionId) || exceptionId <= 0) {
@@ -178,6 +188,12 @@ async function deleteException(id) {
   if (!existingException) {
     throw new AppError('Exceção de disponibilidade não encontrada.', 404);
   }
+
+  await resolveAdminUserId({
+    requestedUserId: existingException.user_id,
+    currentUser,
+    requireCurrentAdmin: true,
+  });
 
   await availabilityExceptionModel.deleteById(exceptionId);
 }
